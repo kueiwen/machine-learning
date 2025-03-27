@@ -2,6 +2,8 @@ from typing import Tuple, List
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import random
+from statistics import mode
 from scripts.utils import ClassificationTreeNode, RegressionTreeNode
 
 class LinearRegression:
@@ -552,3 +554,41 @@ class DecisionTreeRegressor:
             print('   '*depth, '| - value: ', np.argmax(Node.predict_values))
         self.print_tree(Node.right, depth+1)
 
+class RandomForestClassifier:
+    def __init__(self, n_classifiers: int = 3, data_percentage = 0.5, criterion: str = 'entropy', max_depth: int = 6, min_samples_leaf: int = 1):
+        self.n_classifiers = n_classifiers
+        self.data_percentage = data_percentage
+        self.classifiers = [DecisionTreeClassifier(criterion, max_depth, min_samples_leaf) for _ in range(n_classifiers)]
+    
+    def fit(self, X: np.array, Y: np.array):
+        """Build multiple decision trees for the given data
+        Args:
+            X (np.array): The input data
+            Y (np.array): The target labels"""
+        data_len = len(X)
+        idx = random.choices(list(range(data_len)),k=int(data_len*self.data_percentage))
+
+        for i in range(self.n_classifiers):
+            sub_X = X[idx]
+            sub_Y = Y[idx]
+            self.classifiers[i].fit(sub_X, sub_Y)
+
+    def predict(self, X: np.array) -> np.array:
+        """Predict the labels for the given data
+        Args:
+            X (np.array): The input data
+        Returns:
+            np.array: The predicted labels"""
+        predictions = []
+        for x in X:
+            p = []
+            for c in self.classifiers:
+                node = c.tree
+                while node.left is not None and node.right is not None:
+                    if x[node.feature_idx] < node.feature_val:
+                        node = node.left
+                    else:
+                        node = node.right
+                p.append(np.argmax(node.label_probs))
+            predictions.append(mode(p))
+        return np.array(predictions)
