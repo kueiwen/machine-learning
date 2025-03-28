@@ -1,6 +1,15 @@
+import numpy as np
 
 class ClassificationTreeNode:
-    def __init__(self, X, feature_idx, feature_val, label_probs, information_gain, parent = None):
+    def __init__(self, X: np.array, feature_idx: int, feature_val: float, label_probs: list, information_gain: float, parent = None):
+        """
+        X: np.array, shape = (n_samples, n_features)
+        feature_idx: int, index of the feature used to split the node
+        feature_val: float, value of the feature used to split the node
+        label_probs: list, list of probabilities of each class in the node
+        information_gain: float, information gain of the split
+        parent: ClassificationTreeNode, parent node
+        """
         self.X = X
         self.feature_idx: int = feature_idx
         self.feature_val: float = feature_val
@@ -17,7 +26,13 @@ class ClassificationTreeNode:
         self.right = right
 
 class RegressionTreeNode:
-    def __init__(self, X, feature_idx, feature_val, parent = None):
+    def __init__(self, X: np.array, feature_idx: int, feature_val: float, parent = None):
+        """
+        X: np.array, shape = (n_samples, n_features)
+        feature_idx: int, index of the feature used to split the node
+        feature_val: float, value of the feature used to split the node
+        parent: RegressionTreeNode, parent node
+        """
         self.X = X
         self.feature_idx: int = feature_idx
         self.feature_val: float = feature_val
