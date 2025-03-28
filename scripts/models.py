@@ -1,17 +1,32 @@
 from typing import Tuple, List
 import numpy as np
+import pandas as pd
 import math
 import matplotlib.pyplot as plt
+import seaborn as sns
 import random
 from statistics import mode
 from scripts.utils import ClassificationTreeNode, RegressionTreeNode
 
 class LinearRegression:
     def __init__ (self, lr: float = 0.01, epochs: int = 1000):
+        """
+        Args:
+            lr (float): learning rate
+            epochs (int): number of epochs
+        """
         self.lr = lr
         self.epochs = epochs
 
     def fit(self, X: np.array, Y: np.array) -> Tuple[List, float]:
+        """Train the Linear Regression model
+        Args:
+            X (np.array): feature matrix
+            Y (np.array): target vector
+        Returns:
+            np.array: weights
+            float: bias
+        """
         self.X = X
         self.Y = Y
         if X.ndim == 1:
@@ -38,17 +53,37 @@ class LinearRegression:
         return self.w, self.b
     
     def predict(self, X: np.array) -> np.array:
+        """Predict the target vector
+        Args:
+            X (np.array): feature matrix
+        Returns:
+            np.array: predicted target vector
+        """
         return self.w.dot(X) + self.b
 
 
 class SVM:
     def __init__(self, C: float = 0.1, lr: float = 0.001, epochs: int = 10000):
+        """
+        Args:
+            C (float): regularization parameter
+            lr (float): learning rate
+            epochs (int): number of epochs
+        """
         self.C = C
         self.lr = lr
         self.epochs = epochs
         self.loss = None
 
     def fit(self, X, Y) -> Tuple[List, float]:
+        """Train the SVM model
+        Args:
+            X (np.array): feature matrix
+            Y (np.array): target vector
+        Returns:
+            np.array: weights
+            float: bias
+        """
         if X.ndim == 1:
             self.n_features = 1
             self.X = X.reshape(-1, len(X))
@@ -72,12 +107,27 @@ class SVM:
         return self.w, self.b
 
     def getLoss(self) -> int:
+        """Get the loss value
+        Returns:
+            int: loss value
+        """
         return self.loss[0]
     
     def predict(self, X) -> np.array:
+        """Predict the target vector
+        Args:
+            X (np.array): feature matrix
+        Returns:
+            np.array: predicted target vector
+        """
         return self.w.dot(X)+self.b
     
     def plot(self, xlabel: str = '', ylabel: str = ''):
+        """Plot the decision boundary
+        Args:
+            xlabel (str): x-axis label
+            ylabel (str): y-axis label
+        """
         colormap = np.array(['#e9c46a','#2a9d8f'])
         Y = np.array([0 if x==-1 else 1 for x in list(self.Y)])
         plt.scatter(self.X.T[0], self.X.T[1],c=colormap[Y])
@@ -101,11 +151,25 @@ class SVM:
 
 class SVR:
     def __init__(self, lr: float = 0.001, epsilon: float = 0.01, epochs: int = 1000):
+        """
+        Args:
+            lr (float): learning rate
+            epsilon (float): epsilon value
+            epochs (int): number of epochs
+        """
         self.lr = lr
         self.epsilon = epsilon
         self.epochs = epochs
 
     def fit(self, X, Y) -> Tuple[List, float]:
+        """Train the SVR model
+        Args:
+            X (np.array): feature matrix
+            Y (np.array): target vector
+        Returns:
+            np.array: weights
+            float: bias
+        """
         if X.ndim == 1:
             self.n_features = 1
             self.X = X.reshape(-1, len(X))
@@ -133,15 +197,30 @@ class SVR:
         return self.w, self.b
             
     def getLoss(self) -> int:
+        """Get the loss value
+        Returns:
+            int: loss value
+        """
         return self.loss[0]
     
     def predict(self, X) -> np.array:
+        """Predict the target vector
+        Args:
+            X (np.array): feature matrix
+        Returns:
+            np.array: predicted target vector
+        """
         return self.w.dot(X)+self.b
     
     def plot(self, xlabel: str = '', ylabel: str = ''):
-        self.Y_pred = self.w * self.X + self.b
+        """Plot the decision boundary
+        Args:
+            xlabel (str): x-axis label
+            ylabel (str): y-axis label
+        """
+        self.y_pred = self.w * self.X + self.b
         plt.scatter(self.X, self.Y) 
-        plt.plot([min(self.X[0]), max(self.X[0])], [min(self.Y_pred[0]), max(self.Y_pred[0])], color='red')
+        plt.plot([min(self.X[0]), max(self.X[0])], [min(self.y_pred[0]), max(self.y_pred[0])], color='red')
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.show()
@@ -202,35 +281,18 @@ class NB:
         return y_pred
 
 
-class ClassificationTreeNode:
-    def __init__(self, X, feature_idx, feature_val, label_probs, information_gain, parent = None):
-        self.X = X
-        self.feature_idx: int = feature_idx
-        self.feature_val: float = feature_val
-        self.label_probs: list = label_probs
-        self.information_gain: float = information_gain
-        self.parent: ClassificationTreeNode = parent
-        self.left: ClassificationTreeNode = None
-        self.right: ClassificationTreeNode = None
-    
-    def update_left(self, left):
-        self.left = left
-
-    def update_right(self, right):
-        self.right = right
-
 class DecisionTreeClassifier:
     def __init__(self, criterion: str = 'entropy', max_depth: int = 6, min_samples_leaf: int = 1):
+        """
+        Args:
+            criterion (str): criterion to split the data
+            max_depth (int): maximum depth of the tree
+            min_samples_leaf (int): minimum number of samples required to be at a leaf node
+        """
         self.criterion = criterion
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
         self.tree: DecisionTreeClassifier = None
-
-    def update_left(self, left):
-        self.left = left
-
-    def update_right(self, right):
-        self.right = right
 
     def entropy(self, class_probabilitues: list) -> float:
         """Implement the entropy function
@@ -368,6 +430,7 @@ class DecisionTreeClassifier:
         Returns:
             predictions (np.array): The predicted class of the input data"""
         predictions = []
+        self.pred_prob = []
         for x in X:
             node = self.tree
             while node.left is not None and node.right is not None:
@@ -375,10 +438,24 @@ class DecisionTreeClassifier:
                     node = node.left
                 else:
                     node = node.right
+            self.pred_prob.append(node.label_probs)
             predictions.append(np.argmax(node.label_probs))
         return np.array(predictions)
     
-    def print_tree(self, Node, depth = 0):
+    def get_pred_prob(self, X: np.array) -> list:
+        """Get the probability of each class for the given input data
+        Args:
+            X (np.array): The input data
+        Returns:
+            pred_prob (list): The probability of each class for the input data"""
+        self.predict(X)
+        return self.pred_prob
+    
+    def print_tree(self, Node: ClassificationTreeNode, depth: int = 0):
+        """Print the decision tree
+        Args:
+            Node (ClassificationTreeNode): The root node of the tree
+            depth (int): The depth of the tree"""
         if depth == 0:
             Node = self.tree
         if Node is None:
@@ -414,6 +491,11 @@ class DecisionTreeClassifier:
 
 class DecisionTreeRegressor:
     def __init__(self, max_depth: int = 6, min_samples_leaf: int = 1):
+        """
+        Args:
+            max_depth (int): maximum depth of the tree
+            min_samples_leaf (int): minimum number of samples required to be at a leaf node
+        """
         self.max_depth = max_depth
         self.min_samples_leaf = min_samples_leaf
         self.tree: DecisionTreeRegressor = None
@@ -477,7 +559,11 @@ class DecisionTreeRegressor:
         best_score = 10e+10
         flag = False
         for feature_idx in range(n_features):
-            for feature_val in np.unique(X.T[feature_idx]):
+            all_val = np.unique(X.T[feature_idx])
+            val = np.unique([np.percentile(all_val, 10),np.percentile(all_val, 20),np.percentile(all_val, 30),
+                             np.percentile(all_val, 40),np.percentile(all_val, 50),np.percentile(all_val, 60),
+                             np.percentile(all_val, 70),np.percentile(all_val, 80),np.percentile(all_val, 90)])
+            for feature_val in val:
                 x1, x2, y1, y2 = self.split(X, y, feature_idx, feature_val)
                 current_split = {'feature_idx': feature_idx, 'feature_val': feature_val, 
                                 'x1': x1, 'x2': x2, 'y1': y1, 'y2': y2, 'best_score': best_score}
@@ -540,7 +626,11 @@ class DecisionTreeRegressor:
             predictions.append(node.predict_values)
         return np.array(predictions)
     
-    def print_tree(self, Node, depth = 0):
+    def print_tree(self, Node: RegressionTreeNode, depth: int = 0):
+        """Print the decision tree
+        Args:
+            Node (RegressionTreeNode): The root node of the tree
+            depth (int): The depth of the tree"""
         if depth == 0:
             Node = self.tree
         if Node is None:
@@ -556,6 +646,14 @@ class DecisionTreeRegressor:
 
 class RandomForestClassifier:
     def __init__(self, n_classifiers: int = 3, data_percentage = 0.5, criterion: str = 'entropy', max_depth: int = 6, min_samples_leaf: int = 1):
+        """
+        Args:
+            n_classifiers (int): number of decision trees
+            data_percentage (float): percentage of data to be used to train each tree
+            criterion (str): criterion to split the data
+            max_depth (int): maximum depth of the tree
+            min_samples_leaf (int): minimum number of samples required to be at a leaf node
+        """
         self.n_classifiers = n_classifiers
         self.data_percentage = data_percentage
         self.classifiers = [DecisionTreeClassifier(criterion, max_depth, min_samples_leaf) for _ in range(n_classifiers)]
@@ -592,3 +690,225 @@ class RandomForestClassifier:
                 p.append(np.argmax(node.label_probs))
             predictions.append(mode(p))
         return np.array(predictions)
+    
+
+class AdaBoostClassifier:
+    def __init__(self, n_learners: int = 8, sample_percentage: float = 0.8):
+        """
+        Args:
+            n_learners (int): number of decision trees
+            sample_percentage (float): percentage of data to be used to train each tree
+        """
+        self.n_learners = n_learners
+        self.sample_percentage = sample_percentage
+
+    def update_weightage(self):
+        """Update the weightage of the samples according to the error rate of the learner"""
+        y_pred = self.learner.predict(self.X)
+        error = np.sum(self.weights * (y_pred != self.y))
+        self.amount_of_say.append(math.log((1 - error) / error)+math.log(self.label_count-1))
+        d = math.sqrt((1 - error) / error)
+        self.weights[y_pred != self.y] *= d
+        self.weights[y_pred == self.y] /= d
+        self.weights /= np.sum(self.weights)
+
+    def update_train_data(self):
+        """Update the training data according to the wieghtage and sample percentage"""
+        n_samples = self.X.shape[0]
+        sample_size = int(n_samples * self.sample_percentage)
+        idx = np.random.choice(n_samples, size=sample_size, replace=True, p=self.weights)
+        return self.X[idx], self.y[idx]
+        
+    def fit(self, X: np.array, y: np.array):
+        """Build the AdaBoost model
+        Args:
+            X: np.array: feature matrix
+            y: np.array: target vector
+        """
+        self.X = X
+        self.y = y
+        X_sampled = X
+        y_sampled = y
+        self.n_samples = len(y)
+        self.label_count = len(np.unique(y))
+        self.weights = np.ones(self.n_samples) / self.n_samples
+        self.learners = []
+        self.amount_of_say = []
+
+        for i in range(self.n_learners):
+            self.learner = DecisionTreeClassifier(max_depth=1)
+            self.learner.fit(X_sampled, y_sampled)
+            self.update_weightage()
+            X_sampled, y_sampled = self.update_train_data()
+            self.learners.append(self.learner)
+
+    def predict(self, X: np.array) -> np.array:
+        """Predict the target vector
+        Args:
+            X: np.array: feature matrix
+        Returns:
+            np.array: predicted target vector
+        """
+        pred_scores = np.zeros(shape=(self.n_learners, X.shape[0], self.label_count))
+        for idx, learner in enumerate(self.learners):
+            pred_prob = learner.get_pred_prob(X)
+            pred_scores[idx] = np.array(pred_prob)*self.amount_of_say[idx]
+        avg_pred_scores = np.mean(pred_scores, axis=0)
+        return np.argmax(avg_pred_scores, axis=1)
+    
+class GradientBoostingRegressor:
+    def __init__(self, epochs: int=100, learning_rate: float=0.1):
+        """
+        Args:
+            epochs (int): number of epochs
+            learning_rate (float): learning rate
+        """
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+
+    def calculate_grdient(self, y: np.array, y_pred: np.array) -> np.array:
+        """Calculate the gradient of the loss function
+        Args:
+            y: np.array: target vector
+            y_pred: np.array: predicted target vector
+        Returns:
+            np.array: gradient of the loss function
+        """
+        return -(y - y_pred)
+    
+    def calculate_loss(self, y: np.array, y_pred: np.array) -> float:
+        """Calculate the loss function
+        Args:
+            y: np.array: target vector
+            y_pred: np.array: predicted target vector
+        Returns:
+            float: loss value
+        """
+        return np.sqrt(np.mean((y - y_pred)**2))
+
+    def fit(self, X: np.array, y: np.array):
+        self.X = X
+        self.y = y
+        self.models = []
+        self.losses = []
+        y_pred = np.zeros(len(y)).reshape(-1, 1)*np.mean(y)
+        for _ in range(self.epochs):
+            if _ + 1 % 10 == 0:
+                print("Epoch: ", _, "Loss: ", self.calculate_loss(y, y_pred))
+            residual = self.calculate_grdient(y, y_pred)
+            model = DecisionTreeRegressor(max_depth=1)
+            model.fit(X, residual)
+            m_pred = model.predict(X).reshape(-1,1)
+            y_pred -= self.learning_rate*m_pred
+            self.models.append(model)
+            self.losses.append(self.calculate_loss(y, y_pred))
+            if _ > 10:
+                if (self.losses[-2] - self.losses[-1]) < 0.001:
+                    print("Epoch: ", _, "Loss: ", self.calculate_loss(y, y_pred))
+                    break
+
+    def predict(self, X: np.array) -> np.array:
+        """Predict the target vector
+        Args:
+            X: np.array: feature matrix
+        Returns:
+            np.array: predicted target vector
+        """
+        y_pred = np.zeros(len(X)).reshape(-1, 1)*np.mean(self.y)
+        for model in self.models:
+            y_pred -= self.learning_rate*model.predict(X).reshape(-1, 1)
+        return y_pred
+
+    def plot_loss(self):
+        """Plot the loss function"""
+        df = pd.DataFrame({'epochs': range(1, len(self.losses)+1), 'losses': self.losses})
+        sns.set_theme()
+        sns.lineplot(x='epochs', y='losses', data=df)
+
+class LogisticRegression:
+    def __init__(self, lr: float=0.01, epochs: int=1000, fit_intercept: bool=False, verbose: bool=True):
+        """
+        Args:
+            lr (float): learning rate
+            epochs (int): number of epochs
+            fit_intercept (bool): whether to fit an intercept term in addition to the coefficients
+            verbose (bool): whether to output loss after each epoch
+        """
+        self.lr = lr
+        self.epochs = epochs
+        self.fit_intercept = fit_intercept
+        self.verbose = verbose
+
+    def add_intercept(self, X: np.array) -> np.array:
+        """Add intercept to the input data
+        Args:
+            X (np.array): input data
+        Returns:
+            np.array: input data with intercept
+        """
+        intercept = np.ones((X.shape[0], 1))
+        return np.concatenate((intercept, X), axis=1)
+    
+    def sigmoid(self, z: np.array) -> np.array:
+        """Calculate the sigmoid function
+        Args:
+            z (np.array): input data
+        Returns:
+            np.array: sigmoid of the input data
+        """
+        return 1 / (1 + np.exp(-z) + 1e-10)
+    
+    def loss(self, h: np.array, y: np.array) -> float:
+        """Calculate the loss function
+        Args:
+            h (np.array): predicted output of sigmoid function
+            y (np.array): ground truth
+        Returns:
+            float: loss value
+        """
+        return np.sum(np.log(1 + np.exp(h)) - y * h)
+    
+    def fit(self, X: np.array, y: np.array):
+        """Fit the model
+        Args:
+            X (np.array): input data
+            y (np.array): ground truth
+        """
+        if self.fit_intercept:
+            X = self.add_intercept(X)
+        
+        # weights initialization
+        self.theta = np.zeros(X.shape[1])
+        self.losses = []
+
+        for i in range(self.epochs):
+            z = np.dot(X, self.theta)  ##f(x)=B^TX
+            h = self.sigmoid(z)
+            gradient = np.dot(X.T, (h - y)) / y.size
+            self.theta -= self.lr * gradient
+            self.losses.append(self.loss(h, y))
+
+            if(self.verbose == True and i % 100 == 0):
+                print(f'loss: {self.loss(h, y)} \t')
+
+    def predict_prob(self, X: np.array) -> np.array:
+        """Predict the probability of the input data
+        Args:
+            X (np.array): input data
+        Returns:
+            np.array: predicted probability
+        """
+        if self.fit_intercept:
+            X = self.add_intercept(X)
+
+        return self.sigmoid(np.dot(X, self.theta))
+
+    def predict(self, X: np.array, threshold: int=0.5) -> np.array:
+        """Predict the class of the input data
+        Args:
+            X (np.array): input data
+            threshold (int): threshold for classification
+        Returns:
+            np.array: predicted class
+        """
+        return self.predict_prob(X) >= threshold
