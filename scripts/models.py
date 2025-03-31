@@ -912,3 +912,101 @@ class LogisticRegression:
             np.array: predicted class
         """
         return self.predict_prob(X) >= threshold
+
+class MLP:
+    def __init__(self, n_neurons: list = [10]):
+        """Initialize the MLP with a given number of neurons.
+        Args:
+            n_neurons (list): List of integers where each integer represents the number of neurons in the hidden layers.
+        """
+        self.n_neurons = n_neurons
+
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
+    
+    def softmax(self, x):
+        exp_x = np.exp(x)
+        return exp_x / exp_x.sum(axis=1, keepdims=True)
+
+    def forward(self, layer: np.array) -> np.array:
+        """Forwardpropogation to calculate predicted y.
+        Args:
+            x (np.array): Input data.
+        Return:
+            y (np.array): Predicted target data.
+        """
+        self.hidden_layers[0] = layer
+        for i,weight in enumerate(self.weights):
+            layer = self.sigmoid(layer.dot(weight))
+            self.hidden_layers[i+1]=layer
+        y = self.softmax(self.hidden_layers[-1])
+        return y
+    
+    def backward(self, y, y_pred):
+        """Backpropagation algorithm to compute gradients.
+        Args:
+            y (np.array): Target data.
+            y_pred (np.array): Predicted target_value
+        """
+        delta_t = (y_pred - y)*(self.hidden_layers[-1])*(1-self.hidden_layers[-1])
+        for i in range(1,len(self.weights)+1):
+            self.weights[-i]-=self.lr*(self.hidden_layers[-i-1].T.dot(delta_t))/self.batch_size
+            delta_t = (self.hidden_layers[-i-1])*(1-self.hidden_layers[-i-1])*(delta_t.dot(self.weights[-i].T))
+        
+
+    def train(self, X: np.array, y: np.array, epochs: int=2000, lr: float=0.1, batch_size: int=16):
+        """
+        Train the MLP using backpropagation.
+        X (np.array): Input data.
+        y (np.array): Target data.
+        epochs (int): Number of training epochs.
+        lr (float): Learning rate for weight updates.
+        batch_size (int): Size of a training mini-batch.
+        """
+        # Initialize hiddent layer
+        self.hidden_layers = [np.empty((batch_size,X.shape[1]))] + \
+                             [np.empty((batch_size,n_neuron)) for n_neuron in self.n_neurons] + \
+                             [np.empty((batch_size,y.shape[1]))]
+        # Initialize weights and biases
+        # input layer to hidden layer, hidden layer to output layer
+        if len(self.n_neurons) == 1:
+             self.weights = [np.random.uniform(-1, 1, size=[X.shape[1], self.n_neurons[0]]),
+                             np.random.uniform(-1, 1, size=[self.n_neurons[0], y.shape[1]])]
+        else:
+            self.weights = [np.random.uniform(-1, 1, size=[X.shape[1], self.n_neurons[0]])] + \
+                           [np.random.uniform(-1, 1, size=[self.n_neurons[i-1], self.n_neurons[i]]) for i in range(1, len(self.n_neurons))] + \
+                           [np.random.uniform(-1, 1, size=[self.n_neurons[-1], y.shape[1]])]
+        self.lr = lr
+        self.batch_size = batch_size
+
+        self.losses = []
+
+        n_samples = X.shape[0]
+
+        for epoch in range(epochs):
+            #Shuffle and select batch
+            shuffle = np.random.permutation(n_samples)       
+            X_batches = np.array_split(X[shuffle],n_samples/batch_size)
+            y_batches = np.array_split(y[shuffle],n_samples/batch_size)
+
+            
+            loss = 0
+            
+            # Compute loss (mean squared error)
+            for x_batch,y_batch in zip(X_batches,y_batches):
+                # Forwardpropagation
+                y_pred = self.forward(x_batch)  
+                loss += ((-np.log(y_pred))*y_batch).sum(axis=1).mean()
+                # Backwardpropogation
+                self.backward(y_batch, y_pred)
+
+            self.losses.append(loss/len(y_batch))
+            
+                
+            if epoch % 100 == 0:
+                print(f'Epoch {epoch}, Loss: {loss}')
+
+
+    def predict(self, X):
+        y = self.forward(X)
+        return np.argmax(y, axis=1)
